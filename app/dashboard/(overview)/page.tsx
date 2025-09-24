@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import { RevenueChartSkeleton, LatestInvoicesSkeleton } from '../../ui/skeletons';
 import CardWrapper from '@/app/ui/dashboard/cards';
 import { CardsSkeleton } from '../../ui/skeletons';
+import ServerUserProfile from '@/app/ui/server-user-profile';
  
 export default function Page() {
 
@@ -15,6 +16,9 @@ export default function Page() {
       <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
         Dashboard
       </h1>
+      <div className="mb-6">
+        <ServerUserProfile />
+      </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Suspense fallback={<CardsSkeleton />}>
           <CardWrapper />

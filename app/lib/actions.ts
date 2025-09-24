@@ -2,11 +2,13 @@
 
 import z from 'zod';
 import postgres from 'postgres';
+import bcrypt from 'bcrypt';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
  
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import { SignupFormSchema, FormState } from '@/app/lib/definitions'
 
 export async function authenticate(
   prevState: string | undefined,
@@ -142,4 +144,54 @@ export async function deleteInvoice(id: string) {
   `;
 
   revalidatePath('/dashboard/invoices');
+}
+
+
+ 
+export async function signup(state: FormState, formData: FormData) {
+  // Validate form fields
+  const validatedFields = SignupFormSchema.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    password: formData.get('password'),
+  })
+ 
+  // If any form fields are invalid, return early
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+    }
+  }
+ 
+  const { name, email, password } = validatedFields.data;
+
+  try {
+    // Check if user already exists
+    const existingUser = await sql`
+      SELECT id FROM users WHERE email = ${email}
+    `;
+
+    if (existingUser.length > 0) {
+      return {
+        message: 'User with this email already exists.',
+      };
+    }
+
+    // Hash the password using bcrypt (same as seed function)
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the user (let database generate UUID for id)
+    await sql`
+      INSERT INTO users (name, email, password)
+      VALUES (${name}, ${email}, ${hashedPassword})
+    `;
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return {
+      message: 'Database Error: Failed to create user.',
+    };
+  }
+
+  // Redirect to login page after successful signup
+  redirect('/login');
 }
